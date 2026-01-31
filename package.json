@@ -1,0 +1,36 @@
+{
+  "name": "docmost-mcp",
+  "version": "1.0.0",
+  "description": "A Model Context Protocol (MCP) server for Docmost, allowing AI agents to manage documentation spaces and pages.",
+  "main": "build/index.js",
+  "bin": {
+    "docmost-mcp": "build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector --config mcp_config.json"
+  },
+  "keywords": [
+    "mcp",
+    "docmost",
+    "documentation",
+    "ai",
+    "agent"
+  ],
+  "author": "Moritz Krause",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/form-data": "^2.5.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
