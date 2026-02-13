@@ -1,13 +1,17 @@
 {
   "name": "docmost-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Model Context Protocol (MCP) server for Docmost, allowing AI agents to manage documentation spaces and pages.",
   "main": "build/index.js",
   "bin": {
     "docmost-mcp": "build/index.js"
   },
+  "files": [
+    "build"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "tsc",
     "start": "node build/index.js",
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector --config mcp_config.json"
