@@ -73,3 +73,22 @@ export function filterSearchResult(result: any) {
     spaceName: result.space?.name,
   };
 }
+
+export function filterHistoryEntry(entry: any) {
+  return {
+    id: entry.id,
+    pageId: entry.pageId,
+    title: entry.title,
+    version: entry.version,
+    createdAt: entry.createdAt,
+    lastUpdatedBy: entry.lastUpdatedBy?.name || entry.lastUpdatedById,
+    contributors: entry.contributors?.map((c: any) => c.name) || [],
+  };
+}
+
+export function filterHistoryDetail(entry: any, content?: string) {
+  return {
+    ...filterHistoryEntry(entry),
+    ...(typeof content === "string" && { content }),
+  };
+}

@@ -10,6 +10,8 @@ import {
   filterGroup,
   filterPage,
   filterSearchResult,
+  filterHistoryEntry,
+  filterHistoryDetail,
 } from "./lib/filters.js";
 import { convertProseMirrorToMarkdown } from "./lib/markdown-converter.js";
 import { readFileSync } from "fs";
@@ -329,6 +331,60 @@ class DocmostClient {
     );
     return Promise.all(promises);
   }
+
+  async getPageHistory(pageId: string, cursor?: string) {
+    await this.ensureAuthenticated();
+    const payload: Record<string, any> = { pageId };
+    if (cursor) payload.cursor = cursor;
+    const response = await this.client.post("/pages/history", payload);
+    const data = response.data.data || response.data;
+    const items = data.items || [];
+    return {
+      items: items.map((entry: any) => filterHistoryEntry(entry)),
+      cursor: data.cursor || null,
+    };
+  }
+
+  async getPageHistoryDetail(historyId: string) {
+    await this.ensureAuthenticated();
+    const response = await this.client.post("/pages/history/info", {
+      historyId,
+    });
+    const entry = response.data.data || response.data;
+    const content = entry.content
+      ? convertProseMirrorToMarkdown(entry.content)
+      : "";
+    return filterHistoryDetail(entry, content);
+  }
+
+  async restorePage(pageId: string) {
+    await this.ensureAuthenticated();
+    const response = await this.client.post("/pages/restore", { pageId });
+    return response.data;
+  }
+
+  async getTrash(spaceId: string) {
+    const pages = await this.paginateAll("/pages/trash", { spaceId });
+    return pages.map((page: any) => filterPage(page));
+  }
+
+  async duplicatePage(pageId: string, spaceId?: string) {
+    await this.ensureAuthenticated();
+    const payload: Record<string, any> = { pageId };
+    if (spaceId) payload.spaceId = spaceId;
+    const response = await this.client.post("/pages/duplicate", payload);
+    const newPage = response.data.data || response.data;
+    return filterPage(newPage);
+  }
+
+  async getPageBreadcrumbs(pageId: string) {
+    await this.ensureAuthenticated();
+    const response = await this.client.post("/pages/breadcrumbs", { pageId });
+    const items = response.data.data || response.data;
+    return Array.isArray(items)
+      ? items.map((b: any) => ({ id: b.id, title: b.title }))
+      : items;
+  }
 }
 
 const docmostClient = new DocmostClient(API_URL);
@@ -541,6 +597,111 @@ server.registerTool(
   },
   async ({ query, spaceId }) => {
     const result = await docmostClient.search(query, spaceId);
+    return jsonContent(result);
+  },
+);
+
+// Tool: page_history
+server.registerTool(
+  "page_history",
+  {
+    description:
+      "Get the version history of a page. Returns a list of versions with metadata. Uses cursor-based pagination.",
+    inputSchema: {
+      pageId: z.string().describe("ID of the page"),
+      cursor: z
+        .string()
+        .optional()
+        .describe("Cursor for next page of results"),
+    },
+  },
+  async ({ pageId, cursor }) => {
+    const result = await docmostClient.getPageHistory(pageId, cursor);
+    return jsonContent(result);
+  },
+);
+
+// Tool: page_history_detail
+server.registerTool(
+  "page_history_detail",
+  {
+    description:
+      "Get the content of a specific page version from history. Returns the version metadata and markdown content.",
+    inputSchema: {
+      historyId: z.string().describe("ID of the history entry"),
+    },
+  },
+  async ({ historyId }) => {
+    const result = await docmostClient.getPageHistoryDetail(historyId);
+    return jsonContent(result);
+  },
+);
+
+// Tool: restore_page
+server.registerTool(
+  "restore_page",
+  {
+    description: "Restore a deleted page from trash.",
+    inputSchema: {
+      pageId: z.string().describe("ID of the deleted page to restore"),
+    },
+  },
+  async ({ pageId }) => {
+    await docmostClient.restorePage(pageId);
+    return {
+      content: [
+        { type: "text" as const, text: `Successfully restored page ${pageId}` },
+      ],
+    };
+  },
+);
+
+// Tool: trash
+server.registerTool(
+  "trash",
+  {
+    description: "List deleted pages in a space (trash).",
+    inputSchema: {
+      spaceId: z.string().describe("ID of the space"),
+    },
+  },
+  async ({ spaceId }) => {
+    const result = await docmostClient.getTrash(spaceId);
+    return jsonContent(result);
+  },
+);
+
+// Tool: duplicate_page
+server.registerTool(
+  "duplicate_page",
+  {
+    description: "Duplicate a page. Optionally specify a target space.",
+    inputSchema: {
+      pageId: z.string().describe("ID of the page to duplicate"),
+      spaceId: z
+        .string()
+        .optional()
+        .describe("Optional target space ID (defaults to same space)"),
+    },
+  },
+  async ({ pageId, spaceId }) => {
+    const result = await docmostClient.duplicatePage(pageId, spaceId);
+    return jsonContent(result);
+  },
+);
+
+// Tool: breadcrumbs
+server.registerTool(
+  "breadcrumbs",
+  {
+    description:
+      "Get the breadcrumb path from root to a page. Useful for understanding page hierarchy.",
+    inputSchema: {
+      pageId: z.string().describe("ID of the page"),
+    },
+  },
+  async ({ pageId }) => {
+    const result = await docmostClient.getPageBreadcrumbs(pageId);
     return jsonContent(result);
   },
 );
