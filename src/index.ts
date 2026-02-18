@@ -286,13 +286,14 @@ class DocmostClient {
       spaceId,
     });
 
-    // Filter search results (data is directly an array)
-    const items = response.data?.data || [];
-    const filteredItems = items.map((item: any) => filterSearchResult(item));
+    // Docmost API returns { data: { items: [...] }, success, status }
+    const items = response.data?.data?.items || [];
+    const filteredItems = Array.isArray(items)
+      ? items.map((item: any) => filterSearchResult(item))
+      : [];
 
     return {
       items: filteredItems,
-      success: response.data?.success || false,
     };
   }
 
