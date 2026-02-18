@@ -30,27 +30,66 @@ A Model Context Protocol (MCP) server for [Docmost](https://docmost.com/), enabl
 
 ## Installation
 
+### From GitHub
+
 ```bash
+npm install github:dapi/docmost-mcp
+```
+
+### Run directly with npx
+
+```bash
+DOCMOST_API_URL=http://localhost:3000/api \
+DOCMOST_EMAIL=test@docmost.com \
+DOCMOST_PASSWORD=test \
+npx github:dapi/docmost-mcp
+```
+
+### From source
+
+```bash
+git clone https://github.com/dapi/docmost-mcp.git
+cd docmost-mcp
 npm install
 npm run build
 ```
 
 ## Configuration
 
-This server requires the following environment variables to be set:
+This server requires the following environment variables:
 
 - `DOCMOST_API_URL`: The full URL to your Docmost API (e.g., `https://docs.example.com/api`).
 - `DOCMOST_EMAIL`: The email address for authentication.
 - `DOCMOST_PASSWORD`: The password for authentication.
 
-## usage with Claude Desktop / generic MCP Client
+## Usage with Claude Desktop / MCP Client
 
 Add the following to your MCP configuration (e.g. `claude_desktop_config.json`):
+
+### Using npx (recommended)
 
 ```json
 {
   "mcpServers": {
-    "docmost-local": {
+    "docmost": {
+      "command": "npx",
+      "args": ["github:dapi/docmost-mcp"],
+      "env": {
+        "DOCMOST_API_URL": "http://localhost:3000/api",
+        "DOCMOST_EMAIL": "test@docmost.com",
+        "DOCMOST_PASSWORD": "test"
+      }
+    }
+  }
+}
+```
+
+### Using local build
+
+```json
+{
+  "mcpServers": {
+    "docmost": {
       "command": "node",
       "args": ["./build/index.js"],
       "env": {
